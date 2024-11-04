@@ -1,0 +1,45 @@
+{
+    "configurations": [
+        {
+            "name": "gplusplus_compiler",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.22621.0",
+            "compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+            "intelliSenseMode": "${default}",
+            "cStandard": "c23",
+            "cppStandard": "c++23"
+        },
+        {
+            "name": "clang_cplusplus_compiler",
+            "includePath": [
+                "c:/Users/Yaoctzin/Documents/Local Archives/localrepos/cpp_fundamentals/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.22621.0",
+            "compilerPath": "C:/msys64/mingw64/bin/clang++.exe",
+            "intelliSenseMode": "${default}",
+            "cStandard": "c23",
+            "cppStandard": "c++23",
+            "mergeConfigurations": false,
+            "browse": {
+                "path": [
+                    "c:/Users/Yaoctzin/Documents/Local Archives/localrepos/cpp_fundamentals/**",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}

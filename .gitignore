@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Files
+*.txt
+*.pptx
+*.docx
+*.xlsx
