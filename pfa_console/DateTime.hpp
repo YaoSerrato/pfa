@@ -15,6 +15,8 @@ public:
     ~DateTime();
     void GetFullDateTime(char (*data)[FULL_DATETIME_LENGTH]);
     void GetYearMonth(char (*data)[YEARMONTH_LENGTH]);
+    std::string GetMonthNumber(void);
+    std::string GetYearNumber(void);
 };
 
 
