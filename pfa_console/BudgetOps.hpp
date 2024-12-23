@@ -11,6 +11,7 @@ class BudgetOps
 private:
     void find_budget_records(void);
     bool show_budget_records(void);
+    std::string create_budget_record(void);
 
 public:
     char current_working_directory[BUDOPS_CWD_MAX_LEN] = {'\0'};

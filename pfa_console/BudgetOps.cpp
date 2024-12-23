@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>
 #include <direct.h>
+#include <fstream>
 
 #include <filesystem>
 #include <string>
@@ -100,6 +101,98 @@ bool BudgetOps::show_budget_records(void)
     return ret;
 }
 
+std::string BudgetOps::create_budget_record(void)
+{
+    unsigned int creation_option;
+    bool try_again = true;
+    std::string this_budget_record = "";
+    int i = 0;
+    std::string current_month;
+    std::string current_year;
+    DateTime DT;
+    unsigned int input_month;
+    unsigned int input_year;
+
+    std::cout << "Creating a new budget record." << std::endl;
+
+    while(try_again)
+    {
+        std::cout << std::endl << "Enter 1 for automatically creating it (for the current month) or 2 for creating it manually: ";
+        std::cin >> creation_option;
+        try_again = (creation_option <= 0) || (creation_option > 2);
+
+        if(try_again)
+        {
+            std::cout << "Invalid selection, choose again." << std::endl;
+        }
+    }
+
+    // creating budget record file
+    while(current_working_directory[i] != '\0')
+    {
+        this_budget_record = this_budget_record + current_working_directory[i];
+        i++;
+    }
+
+    this_budget_record = this_budget_record + "\\";
+
+    if(1 == creation_option)
+    {
+        // create automatically
+        current_month = DT.GetMonthNumber();
+        current_year = DT.GetYearNumber();
+    }
+    else if( 2 == creation_option)
+    {
+        // create manually
+        try_again = true;
+        while(try_again)
+        {
+            std::cout << std::endl << "Enter month (1 to 12): ";
+            std::cin >> input_month;
+            try_again = (input_month <= 0) || (input_month > 12);
+
+            if(try_again)
+            {
+                std::cout << "Invalid month, try again." << std::endl;
+            }
+        }
+
+        try_again = true;
+        while(try_again)
+        {
+            std::cout << std::endl << "Enter year (0 to 9999): ";
+            std::cin >> input_year;
+            try_again = (input_year < 0) || (input_year > 9999);
+
+            if(try_again)
+            {
+                std::cout << "Invalid year, try again." << std::endl;
+            }
+        }
+
+        current_month = std::to_string(input_month);
+        current_year = std::to_string(input_year);
+    }
+    else
+    {
+        // we should not arrive here
+    }
+
+    this_budget_record = this_budget_record + BO_BUDGET_RECORD_FILE_TAG + BO_UNDERSCORE + current_month + BO_UNDERSCORE + current_year + BO_BUDGET_RECORD_FILE_EXT;
+    std::cout << "Record to create: " << this_budget_record << std::endl;
+
+    unsigned int n = this_budget_record.length();
+    char file_name[n + 1] = {'\0'};
+    std::fstream myfile;
+
+    strcpy(file_name, this_budget_record.c_str());
+
+    myfile.open(file_name, std::ios::out | std::ios::app);
+    myfile.close();
+
+    return this_budget_record;
+}
 
 void BudgetOps::add_expense(void)
 {
@@ -107,10 +200,6 @@ void BudgetOps::add_expense(void)
     int chosen_record;
     std::string this_budget_record = "";
     bool try_again = true;
-    DateTime DT;
-    std::string current_month;
-    std::string current_year;
-    int i = 0;
 
     // look for existing budget records and show them to the user
     find_budget_records();
@@ -118,6 +207,7 @@ void BudgetOps::add_expense(void)
 
     if(records_found)
     {
+        // ask user to select a budget record
         while(try_again)
         {
             std::cout << std::endl << "Select record file (by number): ";
@@ -134,20 +224,7 @@ void BudgetOps::add_expense(void)
     }
     else
     {
-        std::cout << "Creating a new budget record for the current month." << std::endl;
-
-        while(current_working_directory[i] != '\0')
-        {
-            this_budget_record = this_budget_record + current_working_directory[i];
-            i++;
-        }
-
-        this_budget_record = this_budget_record + "\\";
-
-        current_month = DT.GetMonthNumber();
-        current_year = DT.GetYearNumber();
-
-        this_budget_record = this_budget_record + BO_BUDGET_RECORD_FILE_TAG + BO_UNDERSCORE + current_month + BO_UNDERSCORE + current_year + BO_BUDGET_RECORD_FILE_EXT;
-        std::cout << "Record to create: " << this_budget_record << std::endl;
+        // create a new budget record
+        this_budget_record = create_budget_record();
     }
 }
