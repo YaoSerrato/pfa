@@ -31,7 +31,6 @@ int main()
     BudgetOps budget_operations;
     std::vector<std::string> operations = {"Add new expense.", "Delete existing expense.", "See summary of expenses.", "Close application."};
     int op_selected;
-    std::string recent_op = "";
     bool close_app = false;
 
     while(true)
@@ -44,7 +43,7 @@ int main()
 #endif
             print_header();
 
-            std::cout << recent_op << std::endl << std::endl;
+            std::cout << "  ******  " << budget_operations.recent_op << std::endl << std::endl;
 
             std::cout << "Current working directory correctly loaded." << std::endl;
             std::cout << "Select which operation you would like to perform:" << std::endl << std::endl;
@@ -61,12 +60,12 @@ int main()
             // check for invalid operation
             if( (op_selected <= 0) || (op_selected > operations.size()) )
             {
-                recent_op =  "Invalid selection, choose another one.";
+                budget_operations.recent_op =  "Invalid selection, choose another one.";
                 continue;
             }
             else
             {
-                recent_op =  "";
+                budget_operations.recent_op =  "";
             }
 
             // act accordingly

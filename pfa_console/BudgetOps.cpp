@@ -15,6 +15,15 @@
 #define     BO_BUDGET_RECORD_FILE_TAG       ("budrec")
 #define     BO_UNDERSCORE                   ("_")
 
+#define     BO_BUDGET_ENTRY_SEPARATOR       ("_")
+#define     BO_BUDGET_ENTRY_TAG             ("bdg")
+#define     BO_INCOME_ENTRY_TAG             ("inc")
+#define     BO_EXPENSE_ENTRY_TAG            ("exp")
+
+#define     BO_NECESSITIES_INDEX            (0)
+#define     BO_WANTS_INDEX                  (1)
+#define     BO_SAVINGS_INVESTMENTS_INDEX    (2)
+
 
 BudgetOps::BudgetOps()
 {
@@ -47,6 +56,9 @@ void BudgetOps::find_budget_records(void)
     std::string file_tag = BO_BUDGET_RECORD_FILE_TAG;
 
     std::cout << std::endl << "Looking for budget records..." << std::endl;
+
+    // Clearing the vector
+    budget_files.clear();
 
     // Looping until all the items of the directory are exhausted
     for (const auto& entry : std::filesystem::directory_iterator(current_working_directory))
@@ -128,6 +140,7 @@ std::string BudgetOps::create_budget_record(void)
         }
     }
 
+
     // creating budget record file
     while(current_working_directory[i] != '\0')
     {
@@ -192,7 +205,94 @@ std::string BudgetOps::create_budget_record(void)
     myfile.open(file_name, std::ios::out | std::ios::app);
     myfile.close();
 
+    std::cout << "Record created: " << this_budget_record << std::endl << std::endl;
+
+    
+    // adding initial available monthly budget
+    float budget = 0;
+
+    std::cout << "Insert initial available monthly budget (can have decimals): ";
+    std::cin >> budget;
+
+    myfile.open(file_name, std::ios::out);
+    myfile << BO_BUDGET_ENTRY_TAG;
+    myfile << BO_BUDGET_ENTRY_SEPARATOR;
+    myfile << std::fixed << std::setprecision(2) << budget << std::endl;
+    myfile.close();
+
     return this_budget_record;
+}
+
+void BudgetOps::insert_expense(std::string budget_record)
+{
+    std::fstream myfile;
+    unsigned int n = budget_record.length();
+    char file_name[n + 1] = {'\0'};
+    std::string line;
+    bool isBDG = false;
+
+    std::string bdg_str = "";
+    float bdg_flt = 0;
+
+    strcpy(file_name, budget_record.c_str());
+
+    myfile.open(file_name, std::ios::in); // open the file in read mode
+    while ( (std::getline(myfile, line)) && (!isBDG))
+    {
+        isBDG = ('b' == line.at(0)) && ('d' == line.at(1)) && ('g' == line.at(2));
+
+        if(isBDG)
+        {
+            bdg_str = line.substr(4, line.length() - 4);
+            bdg_flt = std::stof(bdg_str);
+
+            for (unsigned int i = 0; i < expenses_categories.size(); i++)
+            {
+                std::cout << "\tCategory " << std::to_string(i + 1) << " " << expenses_categories[i] << " was assigned " << expenses_assigned_percentage[i] << "%, equivalent to $" << ((bdg_flt) * (expenses_assigned_percentage[i] / 100)) << std::endl;
+            }
+            
+        }
+        else
+        {
+            // should not enter here
+        }
+    }
+    myfile.close(); // Close the file
+
+    // asking user to enter expense details (category, amount, date)
+    unsigned int category;
+    float amount;
+    bool try_again = true;
+
+    while(try_again)
+    {
+        std::cout << std::endl << "Enter expense category (by number): ";
+        std::cin >> category;
+        try_again = (category <= 0) || (category > expenses_categories.size());
+
+        if(try_again)
+        {
+            std::cout << "Invalid category, choose another one." << std::endl;
+        }
+        else
+        {
+            std::cout << "Selected category: " << expenses_categories[category - 1] << std::endl;
+        }
+    }
+
+    std::cout << "Enter expense amount (can have decimals): ";
+    std::cin >> amount;
+
+    // writing expense to file
+    myfile.open(file_name, std::ios::app);
+    myfile << BO_EXPENSE_ENTRY_TAG;
+    myfile << BO_BUDGET_ENTRY_SEPARATOR;
+    myfile << expenses_categories_id[category - 1];
+    myfile << BO_BUDGET_ENTRY_SEPARATOR;
+    myfile << std::fixed << std::setprecision(2) << amount << std::endl; // apparently, I do not need to convert to string
+    myfile.close();
+
+    recent_op = "Expense added to record successfully! Exited to main menu.";
 }
 
 void BudgetOps::add_expense(void)
@@ -201,6 +301,8 @@ void BudgetOps::add_expense(void)
     int chosen_record;
     std::string this_budget_record = "";
     bool try_again = true;
+    std::fstream myfile;
+
 #if CONFIG_CLEAR_SCREEN == CONFIG_ENABLED
     system("CLS");
 #endif
@@ -224,11 +326,36 @@ void BudgetOps::add_expense(void)
             }
         }
         this_budget_record = budget_files[chosen_record - 1];
-        std::cout << "Selected record: " << this_budget_record << std::endl;
+        std::cout << "Selected record: " << this_budget_record << std::endl << std::endl;
     }
     else
     {
         // create a new budget record
         this_budget_record = create_budget_record();
+        std::cout << "Selected record: " << this_budget_record << std::endl << std::endl;
+    }
+
+    // check if budget record has a monthly budget entry
+    unsigned int n = this_budget_record.length();
+    char file_name[n + 1] = {'\0'};
+    std::string line;
+    bool isBDG = false;
+
+    strcpy(file_name, this_budget_record.c_str());
+
+    myfile.open(file_name, std::ios::in); // open the file in read mode
+    while ( (std::getline(myfile, line)) && (!isBDG))
+    {
+        isBDG = ('b' == line.at(0)) && ('d' == line.at(1)) && ('g' == line.at(2));
+    }
+    myfile.close(); // Close the file
+
+    if(isBDG)
+    {
+        insert_expense(this_budget_record);
+    }
+    else
+    {
+        recent_op = "There is not any monthly budget entry in the budget record.\n 'Add expense' operation was aborted. Exited to main menu.";
     }
 }
