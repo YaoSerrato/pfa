@@ -8,6 +8,7 @@
 
 #include "BudgetOps.hpp"
 // #include "DateTime.hpp"
+#include "config.h"
 
 #define     OP_ADD_EXPENSE              (1)
 #define     OP_DEL_EXPENSE              (2)
@@ -38,7 +39,9 @@ int main()
         if(budget_operations.cwd_loaded)
         {
             // print main menu
-            //system("CLS");
+#if CONFIG_CLEAR_SCREEN == CONFIG_ENABLED
+            system("CLS");
+#endif
             print_header();
 
             std::cout << recent_op << std::endl << std::endl;

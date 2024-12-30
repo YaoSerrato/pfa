@@ -1,5 +1,6 @@
 #include "BudgetOps.hpp"
 #include "DateTime.hpp"
+#include "config.h"
 
 #include <iostream>
 #include <iomanip>
@@ -200,6 +201,9 @@ void BudgetOps::add_expense(void)
     int chosen_record;
     std::string this_budget_record = "";
     bool try_again = true;
+#if CONFIG_CLEAR_SCREEN == CONFIG_ENABLED
+    system("CLS");
+#endif
 
     // look for existing budget records and show them to the user
     find_budget_records();
