@@ -15,7 +15,7 @@
 #define     BO_BUDGET_RECORD_FILE_TAG       ("budrec")
 #define     BO_UNDERSCORE                   ("_")
 
-#define     BO_BUDGET_ENTRY_SEPARATOR       ("_")
+#define     BO_BUDGET_ENTRY_SEPARATOR       ("#")
 #define     BO_BUDGET_ENTRY_TAG             ("bdg")
 #define     BO_INCOME_ENTRY_TAG             ("inc")
 #define     BO_EXPENSE_ENTRY_TAG            ("exp")
@@ -223,6 +223,26 @@ std::string BudgetOps::create_budget_record(void)
     return this_budget_record;
 }
 
+bool BudgetOps::look_for_monthly_budget(std::string budget_record)
+{
+    unsigned int n = budget_record.length();
+    char file_name[n + 1] = {'\0'};
+    std::string line;
+    std::fstream myfile;
+    bool isBDG = false;
+
+    strcpy(file_name, budget_record.c_str());
+
+    myfile.open(file_name, std::ios::in); // open the file in read mode
+    while ( (std::getline(myfile, line)) && (!isBDG))
+    {
+        isBDG = ('b' == line.at(0)) && ('d' == line.at(1)) && ('g' == line.at(2));
+    }
+    myfile.close(); // Close the file
+
+    return isBDG;
+}
+
 void BudgetOps::insert_expense(std::string budget_record)
 {
     std::fstream myfile;
@@ -250,7 +270,7 @@ void BudgetOps::insert_expense(std::string budget_record)
             {
                 std::cout << "\tCategory " << std::to_string(i + 1) << " " << expenses_categories[i] << " was assigned " << expenses_assigned_percentage[i] << "%, equivalent to $" << ((bdg_flt) * (expenses_assigned_percentage[i] / 100)) << std::endl;
             }
-            
+            break;
         }
         else
         {
@@ -259,9 +279,11 @@ void BudgetOps::insert_expense(std::string budget_record)
     }
     myfile.close(); // Close the file
 
-    // asking user to enter expense details (category, amount, date)
+    // asking user to enter expense details (category, date, amount, description)
     unsigned int category;
     float amount;
+    std::string date;
+    std::string description;
     bool try_again = true;
 
     while(try_again)
@@ -280,8 +302,20 @@ void BudgetOps::insert_expense(std::string budget_record)
         }
     }
 
-    std::cout << "Enter expense amount (can have decimals): ";
+    // The issue is that after reading amount with std::cin, there is a leftover newline character
+    // in the input buffer that std::getline reads immediately. To fix this, you can add an
+    // extra std::cin.ignore() after reading amount to clear the newline character from the input buffer.
+
+    std::cout << "Enter date (DD:MMM:YYYY): " << std::endl;
+    std::cin >> date;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear the newline character from the input buffer
+
+    std::cout << "Enter expense amount (can have decimals): " << std::endl;
     std::cin >> amount;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear the newline character from the input buffer
+
+    std::cout << "Enter description (string with spaces): " << std::endl;
+    std::getline(std::cin, description);
 
     // writing expense to file
     myfile.open(file_name, std::ios::app);
@@ -289,10 +323,134 @@ void BudgetOps::insert_expense(std::string budget_record)
     myfile << BO_BUDGET_ENTRY_SEPARATOR;
     myfile << expenses_categories_id[category - 1];
     myfile << BO_BUDGET_ENTRY_SEPARATOR;
-    myfile << std::fixed << std::setprecision(2) << amount << std::endl; // apparently, I do not need to convert to string
+    myfile << date;
+    myfile << BO_BUDGET_ENTRY_SEPARATOR;
+    myfile << std::fixed << std::setprecision(2) << amount; // apparently, I do not need to convert to string
+    myfile << BO_BUDGET_ENTRY_SEPARATOR;
+    myfile << description << std::endl;
     myfile.close();
 
     recent_op = "Expense added to record successfully! Exited to main menu.";
+}
+
+void BudgetOps::see_summary(std::string budget_record)
+{
+#if CONFIG_CLEAR_SCREEN == CONFIG_ENABLED
+    system("CLS");
+#endif
+    std::cout << std::endl << "*******************************************************************************************************************************" << std::endl;
+    std::cout << "BUDGET" << std::endl;
+    std::cout << "*******************************************************************************************************************************" << std::endl;
+
+    std::cout << "Showing expenses summary for budget record: " << budget_record << std::endl << std::endl;
+
+    std::fstream myfile;
+    unsigned int n = budget_record.length();
+    char file_name[n + 1] = {'\0'};
+    std::string line;
+    bool isBDG = false;
+
+    std::string bdg_str = "";
+    float bdg_flt = 0;
+
+    strcpy(file_name, budget_record.c_str());
+
+    myfile.open(file_name, std::ios::in); // open the file in read mode
+    while ( (std::getline(myfile, line)) && (!isBDG))
+    {
+        isBDG = ('b' == line.at(0)) && ('d' == line.at(1)) && ('g' == line.at(2));
+
+        if(isBDG)
+        {
+            bdg_str = line.substr(4, line.length() - 4);
+            bdg_flt = std::stof(bdg_str);
+
+            std::cout << "Available monthly budget: $" << bdg_flt << std::endl << std::endl;
+            std::cout << "Available categories: " << std::endl;
+            std::cout << std::setw(10) << "" << std::setw(25) << "CATEGORY" << std::setw(15) << "PERCENTAGE" << std::setw(20) << "AMOUNT" << std::endl;
+
+            for (unsigned int i = 0; i < expenses_categories.size(); i++)
+            {
+                std::cout << std::setw(10) << "" << std::setw(25) << expenses_categories[i] << std::setw(15) << expenses_assigned_percentage[i] << std::setw(20) << ((bdg_flt) * (expenses_assigned_percentage[i] / 100)) << std::endl;
+            }
+            break;
+        }
+        else
+        {
+            // should not enter here
+        }
+    }
+    myfile.close(); // Close the file
+
+    // showing expenses
+    std::cout << std::endl << "*******************************************************************************************************************************" << std::endl;
+    std::cout << "EXPENSES" << std::endl;
+    std::cout << "*******************************************************************************************************************************" << std::endl;
+
+    std::string temp;
+    int index = 0;
+    std::cout << std::endl << std::endl;
+    line.clear();
+    float total_expenses[expenses_categories.size()] = {0};
+
+    for (int i = 0; i < expenses_categories_id.size(); i++)
+    {
+        std::cout << "Expenses for category: " << expenses_categories[i] << std::endl;
+
+        myfile.open(file_name, std::ios::in); // open the file in read mode
+        while (std::getline(myfile, line))
+        {
+            if(line.substr(4, 2) == expenses_categories_id[i])
+            {
+                // print date
+                temp = line.substr(7, line.length() - 7);
+                index = temp.find(BO_BUDGET_ENTRY_SEPARATOR);
+                std::cout << std::setw(10) << "" << std::setw(25) << temp.substr(0, index);
+
+                // print amount
+                index = index + 1;
+                temp = temp.substr(index, temp.length() - index);
+                index = temp.find(BO_BUDGET_ENTRY_SEPARATOR);
+                std::cout << std::setw(20) << temp.substr(0, index);
+                total_expenses[i] += std::stof(temp.substr(0, index));
+
+                // print description
+                index = index + 1;
+                temp = temp.substr(index, temp.length() - index);
+                std::cout << std::setw(20) << temp << std::endl;
+            }
+            else
+            {
+                // not from this category
+            }
+        }
+        myfile.close(); // Close the file
+        std::cout << std::endl;
+    }
+
+    // showing overall balance
+    std::cout << std::endl << "*******************************************************************************************************************************" << std::endl;
+    std::cout << "BALANCE" << std::endl;
+    std::cout << "*******************************************************************************************************************************" << std::endl;
+
+    std::cout << std::endl << std::endl;
+    std::cout << "Overall balance: " << std::endl;
+    std::cout << std::setw(10) << "" << std::setw(25) << "CATEGORY" << std::setw(20) << "ASSIGNED" << std::setw(20) << "SPENT" << std::setw(20) << "AVAILABLE" << std::setw(20) << "SPENT (%)" << std::endl;
+
+    for (int i = 0; i < expenses_categories_id.size(); i++)
+    {
+        std::cout << std::setw(10) << "" << std::setw(25) << expenses_categories[i];
+        std::cout << std::setw(20) << ((bdg_flt) * (expenses_assigned_percentage[i] / 100));
+        std::cout << std::setw(20) << total_expenses[i];
+        std::cout << std::setw(20) << ((bdg_flt) * (expenses_assigned_percentage[i] / 100)) - total_expenses[i];
+        std::cout << std::setw(20) << ((total_expenses[i] / ((bdg_flt) * (expenses_assigned_percentage[i] / 100))) * 100) << std::endl;
+    }
+
+    // wait for user input to exit to main menu
+    std::cout << std::endl << std::endl;
+    int number;
+    std::cout << "Enter a number to exit to main menu: ";
+    std::cin >> number;
 }
 
 void BudgetOps::add_expense(void)
@@ -336,19 +494,8 @@ void BudgetOps::add_expense(void)
     }
 
     // check if budget record has a monthly budget entry
-    unsigned int n = this_budget_record.length();
-    char file_name[n + 1] = {'\0'};
-    std::string line;
     bool isBDG = false;
-
-    strcpy(file_name, this_budget_record.c_str());
-
-    myfile.open(file_name, std::ios::in); // open the file in read mode
-    while ( (std::getline(myfile, line)) && (!isBDG))
-    {
-        isBDG = ('b' == line.at(0)) && ('d' == line.at(1)) && ('g' == line.at(2));
-    }
-    myfile.close(); // Close the file
+    isBDG = look_for_monthly_budget(this_budget_record);
 
     if(isBDG)
     {
@@ -356,6 +503,59 @@ void BudgetOps::add_expense(void)
     }
     else
     {
-        recent_op = "There is not any monthly budget entry in the budget record.\n 'Add expense' operation was aborted. Exited to main menu.";
+        recent_op = "WARNING: There is not any monthly budget entry in the budget record.\n 'Add expense' operation was aborted. Exited to main menu.";
+    }
+}
+
+void BudgetOps::see_expenses_summary(void)
+{
+    bool records_found =  false;
+    bool try_again = true;
+    int chosen_record;
+    std::string this_budget_record = "";
+    std::fstream myfile;
+
+#if CONFIG_CLEAR_SCREEN == CONFIG_ENABLED
+    system("CLS");
+#endif
+
+    // look for existing budget records and show them to the user
+    find_budget_records();
+    records_found = show_budget_records();
+
+    if(records_found)
+    {
+        // ask user to select a budget record
+        while(try_again)
+        {
+            std::cout << std::endl << "Select record file (by number): ";
+            std::cin >> chosen_record;
+            try_again = (chosen_record <= 0) || (chosen_record > budget_files.size());
+
+            if(try_again)
+            {
+                std::cout << "Invalid selection, choose another one." << std::endl;
+            }
+        }
+        this_budget_record = budget_files[chosen_record - 1];
+        std::cout << "Selected record: " << this_budget_record << std::endl << std::endl;
+
+        // check if budget record has a monthly budget entry
+        bool isBDG = false;
+        isBDG = look_for_monthly_budget(this_budget_record);
+
+        if(isBDG)
+        {
+            see_summary(this_budget_record);
+        }
+        else
+        {
+            recent_op = "WARNING: There is not any monthly budget entry in the budget record.\n 'See summary of expenses' operation was aborted. Exited to main menu.";
+        }
+    }
+    else
+    {
+        // there is not any budget record, so we cannot show any summary
+        recent_op = "WARNING: There is not any budget record yet, so a summary cannot be shown. Exited to main menu.";
     }
 }

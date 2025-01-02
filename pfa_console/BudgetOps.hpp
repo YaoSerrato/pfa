@@ -12,7 +12,9 @@ private:
     void find_budget_records(void);
     bool show_budget_records(void);
     std::string create_budget_record(void);
+    bool look_for_monthly_budget(std::string budget_record);
     void insert_expense(std::string budget_record);
+    void see_summary(std::string budget_record);
 
 public:
     std::string recent_op = "";
